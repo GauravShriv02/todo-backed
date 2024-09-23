@@ -1,0 +1,4 @@
+# Ignore files
+
+*.env
+*node_modules
