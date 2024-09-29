@@ -5,7 +5,7 @@ const app = express();
 const jwt = require('jsonwebtoken');
 const bcrypt = require("bcrypt");
 const { z } = require('zod');
-
+const { auth } = require("./auth");
 
 
 app.use(express.json());
@@ -76,7 +76,7 @@ app.post('/signin', async function (req, res) {
 
 		const token = jwt.sign(
 			{ id: user._id.toString() },
-			process.env.JWT_SCREAT,
+			process.env.JWT_SECRET,
 			{ expiresIn: '1d' }
 		);
 
@@ -88,7 +88,60 @@ app.post('/signin', async function (req, res) {
 		console.error("Signin Error:", error);
 		res.status(500).json({ message: "An unexpected error occurred. Please try again later." });
 	}
-})
+});
 
+
+app.use(auth);
+app.post("/todo", async function (req, res) {
+	const userId = req.userId;
+	const title = req.body.title;
+	const status = req.body.status;
+
+	try {
+		await TodoModel.create({
+			userId: userId,
+			title: title,
+			status: status
+		});
+
+		res.status(201).json({
+			message: "Todo created"
+		});
+	} catch (error) {
+		res.status(500).json({
+			error: error
+		});
+	}
+});
+
+
+app.get("/all-todo", async function (req, res) {
+	const userId = req.userId;
+	const todos = await TodoModel.find({
+		userId
+	});
+
+	if (todos.length > 0) {
+		newTodos = todos.map(todo => {
+			return (
+				{
+					todoId: todo._id.toString(),
+					title: todo.title,
+					status: todo.status
+				}
+			)
+		});
+		res.status(200).json({
+			message: 'todo found.',
+			todos: newTodos 
+		});
+	}else{
+		res.status(200).json({
+			message: 'no todo found.'
+		});
+	}
+
+
+});
 
 app.listen(3000);
